@@ -1,32 +1,33 @@
 #!/bin/bash -e
 
+LOCKFILE="/_data/lockfile"
 
 generate_filename(){
+    exec 9>"$LOCKFILE"
+    flock 9
+
     for i in {001..999}; do
-        if [ ! -e "/temp_files/$i" ]; then
+        if [ ! -e "/_data/$i" ]; then
             echo "$i"
             break
         fi
     done
-}
-
-while true; do
-    # Блокировка для определения незанятого имени файла
-    exec 9>/tmp/lockfile
-    flock -n 9 || continue
-
-    filename=$(generate_filename)
-
-    # Разблокировка
+    
     flock -u 9
     exec 9>&-
+}
+
+
+
+while true; do
+    filename=$(generate_filename)
 
     # Создание файла с идентификатором контейнера и порядковым номером
-    echo "$(hostname) - $(date +%s)" > "/temp_files/$filename"
+    echo "$(hostname) - $(date +%s)" > "/_data/$filename"
 
     sleep 1
 
-    rm "/temp_files/$filename"
+    rm "/_data/$filename"
 
     sleep 1
 done
